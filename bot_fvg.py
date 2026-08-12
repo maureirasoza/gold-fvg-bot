@@ -23,7 +23,7 @@ import capital_client as cc
 
 EPIC     = "GOLD"
 SIZE     = 0.3           # distinto del bot Bollinger (0.5) para no chocar
-TP_R     = 1.5           # Take Profit = 1.5 x riesgo
+TP_R     = 1.0           # Take Profit = 1.0 x riesgo (asegura ganador antes; acierto ~63%)
 FILL_WIN = 20            # velas maximas de espera para que se rellene el hueco
 BAR_MIN  = 15
 ATR_LEN  = 14
