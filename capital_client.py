@@ -47,21 +47,26 @@ if not all([API_KEY, IDENTIFIER, API_PASSWORD]):
 
 
 def login():
-    """Abre sesión y devuelve los headers de autenticación (CST y X-SECURITY-TOKEN)."""
-    r = requests.post(
-        f"{BASE}/api/v1/session",
-        headers={"X-CAP-API-KEY": API_KEY, "Content-Type": "application/json"},
-        json={"identifier": IDENTIFIER, "password": API_PASSWORD, "encryptedPassword": False},
-        timeout=30,
-    )
-    if r.status_code != 200:
+    """Abre sesión y devuelve los headers de autenticación. Reintenta ante rate-limit (429)."""
+    import time
+    for intento in range(4):
+        r = requests.post(
+            f"{BASE}/api/v1/session",
+            headers={"X-CAP-API-KEY": API_KEY, "Content-Type": "application/json"},
+            json={"identifier": IDENTIFIER, "password": API_PASSWORD, "encryptedPassword": False},
+            timeout=30,
+        )
+        if r.status_code == 200:
+            return {
+                "X-CAP-API-KEY": API_KEY,
+                "CST": r.headers["CST"],
+                "X-SECURITY-TOKEN": r.headers["X-SECURITY-TOKEN"],
+                "Content-Type": "application/json",
+            }
+        if r.status_code == 429 and intento < 3:
+            time.sleep(4 * (intento + 1))    # backoff 4/8/12s ante "too-many-requests"
+            continue
         sys.exit(f"Login falló ({r.status_code}): {r.text}")
-    return {
-        "X-CAP-API-KEY": API_KEY,
-        "CST": r.headers["CST"],
-        "X-SECURITY-TOKEN": r.headers["X-SECURITY-TOKEN"],
-        "Content-Type": "application/json",
-    }
 
 
 def debug_headers():
