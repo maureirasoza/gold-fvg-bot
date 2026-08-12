@@ -1,0 +1,24 @@
+name: Bot ORO FVG 15m (demo)
+
+on:
+  schedule:
+    - cron: '1,16,31,46 * * * *'
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: Ejecutar bot oro FVG
+        env:
+          CAPITAL_API_KEY:      ${{ secrets.CAPITAL_API_KEY }}
+          CAPITAL_IDENTIFIER:   ${{ secrets.CAPITAL_IDENTIFIER }}
+          CAPITAL_API_PASSWORD: ${{ secrets.CAPITAL_API_PASSWORD }}
+          CAPITAL_ENV: demo
+          CAPITAL_ALLOW_LIVE: '0'
+        run: python bot_fvg.py
