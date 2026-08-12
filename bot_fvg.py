@@ -23,7 +23,8 @@ import capital_client as cc
 
 EPIC     = "GOLD"
 SIZE     = 0.3           # distinto del bot Bollinger (0.5) para no chocar
-TP_R     = 1.0           # Take Profit = 1.0 x riesgo (asegura ganador antes; acierto ~63%)
+SL_MULT  = 1.5           # Stop Loss = 1.5 x riesgo base (mas ancho -> acierto ~72%, pero pierde mas grande)
+TP_R     = 1.0           # Take Profit = 1.0 x riesgo base
 FILL_WIN = 20            # velas maximas de espera para que se rellene el hueco
 BAR_MIN  = 15
 ATR_LEN  = 14
@@ -170,16 +171,20 @@ def main():
         print(f"  Ya se opero FVG en esta vela 15m ({bar0}Z) -> candado."); return
     if dry:
         print("  [DRY-RUN] No coloco la orden."); return
-    # Recalcular desde el precio ACTUAL: SL = borde del hueco (fijo); riesgo y TP desde el precio vivo.
+    # Recalcular desde el precio ACTUAL. Riesgo base = distancia al borde del hueco.
+    # SL = SL_MULT x riesgo (mas ancho); TP = TP_R x riesgo. Ambos desde el precio vivo.
     snap = cc.get(h, f"/api/v1/markets/{EPIC}").json().get("snapshot", {})
-    sl = sig["sl"]
-    if sig["side"] == "BUY":
-        entry = snap.get("offer"); risk = entry - sl
-    else:
-        entry = snap.get("bid"); risk = sl - entry
-    if risk is None or risk <= 0:
+    gap_edge = sig["sl"]                      # borde del hueco = referencia del riesgo base
+    entry = snap.get("offer") if sig["side"] == "BUY" else snap.get("bid")
+    if entry is None:
+        print("  Sin precio actual -> no entro."); return
+    risk = (entry - gap_edge) if sig["side"] == "BUY" else (gap_edge - entry)
+    if risk <= 0:
         print("  El precio ya paso el hueco (riesgo<=0) -> setup invalido, no entro."); return
-    tp = round(entry + (TP_R * risk if sig["side"] == "BUY" else -TP_R * risk), 1)
+    if sig["side"] == "BUY":
+        sl = round(entry - SL_MULT * risk, 1); tp = round(entry + TP_R * risk, 1)
+    else:
+        sl = round(entry + SL_MULT * risk, 1); tp = round(entry - TP_R * risk, 1)
     body = {"epic": EPIC, "direction": sig["side"], "size": SIZE, "stopLevel": sl, "profitLevel": tp}
     r = cc.post(h, "/api/v1/positions", body)
     if r.status_code not in (200, 201):
