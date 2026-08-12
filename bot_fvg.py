@@ -26,6 +26,25 @@ SIZE     = 0.3           # distinto del bot Bollinger (0.5) para no chocar
 TP_R     = 1.5           # Take Profit = 1.5 x riesgo
 FILL_WIN = 20            # velas maximas de espera para que se rellene el hueco
 BAR_MIN  = 15
+ATR_LEN  = 14
+MIN_GAP  = 0.4           # hueco minimo = 0.4 x ATR (evita stops bajo el ruido)
+
+
+def _rma(s, k):
+    out = [None] * len(s)
+    if len(s) < k:
+        return out
+    p = sum(s[:k]) / k; out[k-1] = p
+    for i in range(k, len(s)):
+        p = (p * (k-1) + s[i]) / k; out[i] = p
+    return out
+
+
+def atr_series(h, l, c, k):
+    tr = [h[0] - l[0]]
+    for i in range(1, len(c)):
+        tr.append(max(h[i]-l[i], abs(h[i]-c[i-1]), abs(l[i]-c[i-1])))
+    return _rma(tr, k)
 
 
 def _mid(x):
@@ -61,6 +80,7 @@ def evaluate(h):
     if len(C) < FILL_WIN + 4:
         sys.exit("Pocas velas para calcular.")
     i = len(C) - 1                       # ultima vela cerrada = vela de decision
+    atr = atr_series(H, L, C, ATR_LEN)
     signal = None
     # buscar el FVG mas reciente (formado en [i-FILL_WIN, i-2]) que ESTA vela rellena por 1a vez
     for j in range(i - 1, max(i - FILL_WIN - 1, 2) - 1, -1):
@@ -72,6 +92,9 @@ def evaluate(h):
             gap_top, gap_bot, dr = L[j], H[j-2], 1
         else:
             gap_top, gap_bot, dr = L[j-2], H[j], -1
+        # FILTRO: descarta huecos demasiado chicos (stop quedaria bajo el ruido)
+        if (gap_top - gap_bot) < MIN_GAP * (atr[j] or 0):
+            continue
         # el hueco no debe haberse rellenado antes de la vela i
         already = False
         for k in range(j + 1, i):
