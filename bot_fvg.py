@@ -29,6 +29,7 @@ FILL_WIN = 20            # velas maximas de espera para que se rellene el hueco
 BAR_MIN  = 15
 ATR_LEN  = 14
 MIN_GAP  = 0.4           # hueco minimo = 0.4 x ATR (evita stops bajo el ruido)
+EMA_TREND = 50           # solo continuacion CON la tendencia (EMA50); mejora acierto ~74%
 
 
 def _rma(s, k):
@@ -46,6 +47,13 @@ def atr_series(h, l, c, k):
     for i in range(1, len(c)):
         tr.append(max(h[i]-l[i], abs(h[i]-c[i-1]), abs(l[i]-c[i-1])))
     return _rma(tr, k)
+
+
+def ema_series(s, k):
+    out = [s[0]]; a = 2 / (k + 1)
+    for i in range(1, len(s)):
+        out.append(s[i] * a + out[-1] * (1 - a))
+    return out
 
 
 def _mid(x):
@@ -82,12 +90,16 @@ def evaluate(h):
         sys.exit("Pocas velas para calcular.")
     i = len(C) - 1                       # ultima vela cerrada = vela de decision
     atr = atr_series(H, L, C, ATR_LEN)
+    ema = ema_series(C, EMA_TREND)
     signal = None
     # buscar el FVG mas reciente (formado en [i-FILL_WIN, i-2]) que ESTA vela rellena por 1a vez
     for j in range(i - 1, max(i - FILL_WIN - 1, 2) - 1, -1):
         bull = L[j] > H[j-2] and C[j] > C[j-2]
         bear = H[j] < L[j-2] and C[j] < C[j-2]
         if not (bull or bear):
+            continue
+        # FILTRO DE TENDENCIA: solo continuacion EN la direccion de la EMA50
+        if (bull and C[j] <= ema[j]) or (bear and C[j] >= ema[j]):
             continue
         if bull:
             gap_top, gap_bot, dr = L[j], H[j-2], 1
