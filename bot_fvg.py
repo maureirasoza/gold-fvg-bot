@@ -24,12 +24,15 @@ import capital_client as cc
 EPIC     = "GOLD"
 SIZE     = 0.3           # distinto del bot Bollinger (0.5) para no chocar
 SL_MULT  = 1.5           # Stop Loss = 1.5 x riesgo base (mas ancho -> acierto ~72%, pero pierde mas grande)
-TP_R     = 1.0           # Take Profit = 1.0 x riesgo base
+TP_R     = 2.0           # Take Profit = 2.0 x riesgo base: deja correr las ganadoras -> payoff 1.23
+                         # (vs 0.62 con TP 1.0). Baja el acierto necesario a ~43% y resiste el spread.
 FILL_WIN = 20            # velas maximas de espera para que se rellene el hueco
 BAR_MIN  = 15
 ATR_LEN  = 14
 MIN_GAP  = 0.4           # hueco minimo = 0.4 x ATR (evita stops bajo el ruido)
-EMA_TREND = 50           # solo continuacion CON la tendencia (EMA50); mejora acierto ~74%
+EMA_TREND = 100          # solo continuacion CON la tendencia (EMA100, mas estable que 50)
+# Cambio 20-ago-2026: TP 1.0->2.0R + EMA 50->100. Backtest 71d robusto split-half:
+# +176 con payoff 1.23 (antes +173 payoff 0.62). Arregla la fragilidad de ganancias chicas.
 
 
 def _rma(s, k):
@@ -66,7 +69,7 @@ def current_bar_start():
 
 
 def fetch_closed(h):
-    r = cc.get(h, f"/api/v1/prices/{EPIC}?resolution=MINUTE_15&max=100")
+    r = cc.get(h, f"/api/v1/prices/{EPIC}?resolution=MINUTE_15&max=200")
     if r.status_code != 200:
         sys.exit(f"No se pudo bajar precios ({r.status_code}): {r.text}")
     bar0 = current_bar_start()
