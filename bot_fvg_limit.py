@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
 =======================================================================
-  BORRADOR (NO DESPLEGADO) — Bot ORO FVG con ENTRADA POR ORDEN LIMITE
+  Bot ORO FVG con ENTRADA POR ORDEN LIMITE  (DESPLEGADO 26-ago-2026)
 =======================================================================
-Este archivo NO esta conectado al workflow de GitHub Actions. No corre en
-vivo hasta que el usuario, DESPIERTO y monitoreando, cambie el yaml para
-llamarlo. Es un borrador para revisar juntos.
+EN VIVO (demo): el workflow bot-fvg.yml corre ESTE archivo desde el 26-ago.
+Reemplazo a bot_fvg.py (que entraba a mercado). Revertir = volver el yaml a
+'python bot_fvg.py'. En MONITOREO: verificar en los primeros 5-10 fills que
+las ordenes se coloquen/llenen en el borde y que el acierto suba hacia ~74%.
 
 POR QUE EXISTE
 --------------

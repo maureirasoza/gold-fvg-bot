@@ -16,11 +16,14 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -r requirements.txt
-      - name: Ejecutar bot oro FVG
+      - name: Ejecutar bot oro FVG (entrada por LIMITE en el borde del hueco)
         env:
           CAPITAL_API_KEY:      ${{ secrets.CAPITAL_API_KEY }}
           CAPITAL_IDENTIFIER:   ${{ secrets.CAPITAL_IDENTIFIER }}
           CAPITAL_API_PASSWORD: ${{ secrets.CAPITAL_API_PASSWORD }}
           CAPITAL_ENV: demo
           CAPITAL_ALLOW_LIVE: '0'
-        run: python bot_fvg.py
+        # Cambiado 26-ago: bot_fvg.py (entrada a MERCADO, backtest -25) ->
+        # bot_fvg_limit.py (orden LIMITE en el borde, backtest +430 ROB3).
+        # Revertir = volver a 'python bot_fvg.py'.
+        run: python bot_fvg_limit.py
