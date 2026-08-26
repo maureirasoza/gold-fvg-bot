@@ -32,9 +32,10 @@ FILL_WIN = 20            # velas maximas de espera para que se rellene el hueco
 BAR_MIN  = 15
 ATR_LEN  = 14
 MIN_GAP  = 0.4           # hueco minimo = 0.4 x ATR (evita stops bajo el ruido)
-EMA_TREND = 100          # solo continuacion CON la tendencia (EMA100, mas estable que 50)
-# Cambio 20-ago-2026: TP 1.0->2.0R + EMA 50->100. Backtest 71d robusto split-half:
-# +176 con payoff 1.23 (antes +173 payoff 0.62). Arregla la fragilidad de ganancias chicas.
+EMA_TREND = 50           # solo continuacion CON la tendencia (EMA50). El 100 (probado en 71d)
+                         # era leve sobreajuste: en 2.4 años EMA50 rinde MEJOR (+430 vs +291,
+                         # ROB3, tercio reciente +211 vs +80) y es robusto en 15m tambien.
+                         # Revertido a 50 el 26-ago-2026.
 
 
 def _rma(s, k):
