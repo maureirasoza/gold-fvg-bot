@@ -23,8 +23,9 @@ import capital_client as cc
 
 EPIC     = "GOLD"
 SIZE     = 0.3           # distinto del bot Bollinger (0.5) para no chocar
-SL_MULT  = 1.5           # Stop Loss = 1.5 x riesgo base (mas ancho -> acierto ~72%, pero pierde mas grande)
-TP_R     = 2.0           # Take Profit = 2.0 x riesgo base: deja correr las ganadoras -> payoff 1.23
+SL_MULT  = 1.6           # Stop Loss = 1.6 x riesgo base (26-ago: 1.5->1.6; barrido SLxTP robusto:
+                         # +269 vs +200, 59% acierto, mitades parejas +145/+124. SL en meseta plana.)
+TP_R     = 2.0           # Take Profit = 2.0 x riesgo base: deja correr las ganadoras
                          # (vs 0.62 con TP 1.0). Baja el acierto necesario a ~43% y resiste el spread.
 FILL_WIN = 20            # velas maximas de espera para que se rellene el hueco
 BAR_MIN  = 15
