@@ -25,7 +25,8 @@ EPIC     = "GOLD"
 SIZE     = 0.3           # distinto del bot Bollinger (0.5) para no chocar
 SL_MULT  = 1.5           # Stop Loss = 1.5 x riesgo base. (El 1.6 probado en 71d era SOBREAJUSTE:
                          # en 2.4 años rinde PEOR y no robusto. Revertido.)
-TP_R     = 2.0           # Take Profit = 2.0 x riesgo base: deja correr las ganadoras
+TP_R     = 1.0           # Take Profit = 1.0 x riesgo base. (El 2.0 probado en 71d era SOBREAJUSTE:
+                         # en 2.4 años NO robusto. TP 1.0 = ROB3 +291, 73% acierto. Revertido.)
                          # (vs 0.62 con TP 1.0). Baja el acierto necesario a ~43% y resiste el spread.
 FILL_WIN = 20            # velas maximas de espera para que se rellene el hueco
 BAR_MIN  = 15
