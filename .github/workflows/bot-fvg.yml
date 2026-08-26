@@ -1,8 +1,10 @@
 name: Bot ORO FVG 15m (demo)
 
 on:
-  schedule:
-    - cron: '1,16,31,46 * * * *'
+  # Gatillo UNICO: cron-job.org via workflow_dispatch (POST a /dispatches).
+  # Se quito el 'schedule' de GitHub: disparaba a la misma hora que cron-job.org
+  # -> dos runs concurrentes -> race en el candado de idempotencia -> entradas
+  # DUPLICADAS en la misma vela. cron-job.org es el gatillo puntual y confiable.
   workflow_dispatch:
 
 jobs:
