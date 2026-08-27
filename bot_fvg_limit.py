@@ -49,7 +49,10 @@ from datetime import datetime, timezone, timedelta
 import capital_client as cc
 
 EPIC     = "GOLD"
-SIZE     = 0.3
+SIZE     = 1.0           # Subido de 0.3 a 1.0 el 26-ago (a pedido). Riesgo ~$12/trade
+                         # (SL 1.5xgap, gap ~$8). Margen ~$230. OJO margen total de los 3
+                         # bots ~$736 -> nivel de margen ~136% peor caso (mas justo). Aun
+                         # SIN validar (1 trade) -> vigilar los primeros resultados.
 SL_MULT  = 1.5           # SL = borde - 1.5 x tamano_hueco  (validado)
 TP_R     = 1.0           # TP = borde + 1.0 x tamano_hueco  (validado, ROB3)
 FILL_WIN = 20            # velas de vida del hueco antes de expirar la orden
