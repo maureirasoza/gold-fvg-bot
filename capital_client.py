@@ -47,15 +47,20 @@ if not all([API_KEY, IDENTIFIER, API_PASSWORD]):
 
 
 def login():
-    """Abre sesión y devuelve los headers de autenticación. Reintenta ante rate-limit (429)."""
+    """Abre sesión y devuelve headers de auth. Reintenta ante blips transitorios (red, 429, 5xx)."""
     import time
     for intento in range(4):
-        r = requests.post(
-            f"{BASE}/api/v1/session",
-            headers={"X-CAP-API-KEY": API_KEY, "Content-Type": "application/json"},
-            json={"identifier": IDENTIFIER, "password": API_PASSWORD, "encryptedPassword": False},
-            timeout=30,
-        )
+        try:
+            r = requests.post(
+                f"{BASE}/api/v1/session",
+                headers={"X-CAP-API-KEY": API_KEY, "Content-Type": "application/json"},
+                json={"identifier": IDENTIFIER, "password": API_PASSWORD, "encryptedPassword": False},
+                timeout=30,
+            )
+        except requests.exceptions.RequestException as e:
+            if intento < 3:
+                time.sleep(3 * (intento + 1)); continue
+            sys.exit(f"Login falló (red): {e}")
         if r.status_code == 200:
             return {
                 "X-CAP-API-KEY": API_KEY,
@@ -63,8 +68,8 @@ def login():
                 "X-SECURITY-TOKEN": r.headers["X-SECURITY-TOKEN"],
                 "Content-Type": "application/json",
             }
-        if r.status_code == 429 and intento < 3:
-            time.sleep(4 * (intento + 1))    # backoff 4/8/12s ante "too-many-requests"
+        if (r.status_code == 429 or r.status_code >= 500) and intento < 3:
+            time.sleep(4 * (intento + 1))    # backoff ante too-many-requests o error transitorio del server
             continue
         sys.exit(f"Login falló ({r.status_code}): {r.text}")
 
@@ -83,11 +88,31 @@ def debug_headers():
         print("  -", k)
 
 
+def _get_retry(url, headers, tries=3):
+    """GET con reintento ante blips transitorios (error de red o 5xx). Es idempotente -> seguro reintentar."""
+    import time
+    last_exc = None
+    for i in range(tries):
+        try:
+            r = requests.get(url, headers=headers, timeout=30)
+        except requests.exceptions.RequestException as e:
+            last_exc = e
+            if i < tries - 1:
+                time.sleep(2 * (i + 1)); continue
+            raise
+        if r.status_code >= 500 and i < tries - 1:
+            time.sleep(2 * (i + 1)); continue
+        return r
+    if last_exc:
+        raise last_exc
+
+
 def get(h, path):
-    return requests.get(f"{BASE}{path}", headers=h, timeout=30)
+    return _get_retry(f"{BASE}{path}", h)
 
 
 def post(h, path, body):
+    # NO se reintenta: un POST puede haber colocado la orden aunque falle la respuesta -> evitar duplicados.
     return requests.post(f"{BASE}{path}", headers=h, json=body, timeout=30)
 
 
