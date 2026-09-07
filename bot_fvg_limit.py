@@ -59,9 +59,10 @@ FILL_WIN = 20            # velas de vida del hueco antes de expirar la orden
 BAR_MIN  = 15
 ATR_LEN  = 14
 MIN_GAP  = 0.4
-MAX_GAP  = 3.0           # tope: salta huecos > 3xATR. Acota el riesgo por trade (SL=1.5xgap)
-                         # evitando outliers gigantes (ej. hueco $54 -> perdida $82 ~7% cuenta).
-                         # No toca los multiplicadores validados; solo descarta el caso extremo.
+MAX_GAP  = 3.0           # tope de hueco para dimensionar SL/TP (en x ATR). NO salta el trade:
+                         # entra igual por limite en el borde real, pero si el hueco es outlier
+                         # (>3xATR) topea el hueco efectivo para acotar el riesgo (ej. hueco $54
+                         # -> perdida $82 ~7% cuenta). Preserva entrada validada y razon 1.5/1.0.
 EMA_TREND = 50           # continuacion con la tendencia (EMA50, validado en 2.4 anos)
 
 
@@ -145,8 +146,10 @@ def find_pending_fvg(h):
         a = atr[j] or 0
         if g < MIN_GAP * a:
             continue
-        if a > 0 and g > MAX_GAP * a:       # salta huecos outlier gigantes (riesgo desproporcionado)
-            continue
+        # Hueco EFECTIVO para dimensionar SL/TP: se entra igual por limite en el borde real,
+        # pero si el hueco es outlier gigante (>MAX_GAP x ATR) se topea para acotar el riesgo.
+        # Preserva la entrada validada y la razon SL 1.5x / TP 1.0x, solo limita el caso extremo.
+        geff = min(g, MAX_GAP * a) if a > 0 else g
         # NO debe haberse rellenado desde que se formo (borde aun sin tocar)
         filled = False
         for k in range(j + 1, i + 1):
@@ -157,21 +160,21 @@ def find_pending_fvg(h):
         # borde de entrada y niveles desde el TAMANO del hueco (como el backtest)
         if dr == 1:
             level = gap_top
-            sl = level - SL_MULT * g
-            tp = level + TP_R * g
+            sl = level - SL_MULT * geff
+            tp = level + TP_R * geff
             side = "BUY"
         else:
             level = gap_bot
-            sl = level + SL_MULT * g
-            tp = level - TP_R * g
+            sl = level + SL_MULT * geff
+            tp = level - TP_R * geff
             side = "SELL"
         age = i - j                     # velas desde que se formo
         remaining = FILL_WIN - age      # velas restantes de vida
         if remaining <= 0:
             continue
         return {"side": side, "level": round(level, 1), "sl": round(sl, 1),
-                "tp": round(tp, 1), "gap": round(g, 2), "remaining_bars": remaining,
-                "close": round(C[i], 1)}
+                "tp": round(tp, 1), "gap": round(g, 2), "gap_eff": round(geff, 2),
+                "capped": geff < g, "remaining_bars": remaining, "close": round(C[i], 1)}
     return {"close": round(C[i], 1)} if C else None
 
 
@@ -210,8 +213,9 @@ def main():
     if not setup or "side" not in setup:
         print("  >> sin FVG pendiente (formado y sin rellenar) ahora")
         return
+    capnote = f" (TOPEADO->{setup['gap_eff']})" if setup.get('capped') else ""
     print(f"  >> FVG PENDIENTE {setup['side']}  borde(limite)={setup['level']} "
-          f"SL={setup['sl']} TP={setup['tp']} gap={setup['gap']} vida={setup['remaining_bars']}v")
+          f"SL={setup['sl']} TP={setup['tp']} gap={setup['gap']}{capnote} vida={setup['remaining_bars']}v")
     if status:
         return
     if has_open_position(h):
