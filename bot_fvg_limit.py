@@ -59,6 +59,9 @@ FILL_WIN = 20            # velas de vida del hueco antes de expirar la orden
 BAR_MIN  = 15
 ATR_LEN  = 14
 MIN_GAP  = 0.4
+MAX_GAP  = 3.0           # tope: salta huecos > 3xATR. Acota el riesgo por trade (SL=1.5xgap)
+                         # evitando outliers gigantes (ej. hueco $54 -> perdida $82 ~7% cuenta).
+                         # No toca los multiplicadores validados; solo descarta el caso extremo.
 EMA_TREND = 50           # continuacion con la tendencia (EMA50, validado en 2.4 anos)
 
 
@@ -139,7 +142,10 @@ def find_pending_fvg(h):
         else:
             gap_top, gap_bot, dr = L[j-2], H[j], -1
         g = gap_top - gap_bot
-        if g < MIN_GAP * (atr[j] or 0):
+        a = atr[j] or 0
+        if g < MIN_GAP * a:
+            continue
+        if a > 0 and g > MAX_GAP * a:       # salta huecos outlier gigantes (riesgo desproporcionado)
             continue
         # NO debe haberse rellenado desde que se formo (borde aun sin tocar)
         filled = False
