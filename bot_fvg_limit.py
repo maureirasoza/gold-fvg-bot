@@ -119,11 +119,17 @@ def fetch_closed(h):
 
 
 def find_pending_fvg(h):
-    """Devuelve el FVG mas reciente FORMADO y AUN NO rellenado que pasa los
-    filtros, listo para colocar una orden limite en su borde. None si no hay."""
+    """Descarga precios y busca el FVG pendiente. Envoltorio del bot en vivo."""
     O, H, L, C = fetch_closed(h)
     if len(C) < FILL_WIN + 4:
         sys.exit("Pocas velas para calcular.")
+    return find_pending_fvg_ohlc(O, H, L, C)
+
+
+def find_pending_fvg_ohlc(O, H, L, C):
+    """Devuelve el FVG mas reciente FORMADO y AUN NO rellenado que pasa los filtros, listo
+    para colocar una orden limite en su borde. None/{close} si no hay. PURA (sin red): el
+    backtester importa ESTA funcion -> test identico al bot real."""
     i = len(C) - 1
     atr = atr_series(H, L, C, ATR_LEN)
     ema = ema_series(C, EMA_TREND)
