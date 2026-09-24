@@ -50,11 +50,19 @@ import capital_client as cc
 
 EPIC     = "GOLD"
 SIZE     = 1.0           # Subido de 0.3 a 1.0 el 26-ago (a pedido). Riesgo ~$12/trade
-                         # (SL 1.5xgap, gap ~$8). Margen ~$230. OJO margen total de los 3
+                         # (SL 2.0xgap desde 24-sep, gap ~$8). Margen ~$230. OJO margen total de los 3
                          # bots ~$736 -> nivel de margen ~136% peor caso (mas justo). Aun
                          # SIN validar (1 trade) -> vigilar los primeros resultados.
-SL_MULT  = 1.5           # SL = borde - 1.5 x tamano_hueco  (validado)
-TP_R     = 1.0           # TP = borde + 1.0 x tamano_hueco  (validado, ROB3)
+SL_MULT  = 2.0           # SL = borde - 2.0 x tamano_hueco. 24-sep: 1.5 -> 2.0
+TP_R     = 0.75          # TP = borde + 0.75 x tamano_hueco. 24-sep: 1.0 -> 0.75
+                         # Validado en 600d REALES de capital.com con el motor real
+                         # (capital-demo/backtest_real.py, fvg_tp_oos.py, fvg_combo.py), usando
+                         # la mitad antigua (feb-nov 2025) FUERA DE MUESTRA: TP 0.75 > 1.0 en las
+                         # dos mitades, todo SL 1.0-4.0 y toda vida 10-60. (TP 1.25-1.5 era
+                         # artefacto del regimen reciente: -216 fuera de muestra.) SL 2.0 = centro
+                         # de meseta y menor DD. 600d: +1826 PF1.60 83% DD-108 tercios
+                         # +177/+1001/+649 vs SL1.5/TP1.0 +1413 PF1.33 70% DD-180.
+                         # Perdida media por trade perdedor 13.6 vs 10.6 pts.
 FILL_WIN = 20            # velas de vida del hueco antes de expirar la orden
 BAR_MIN  = 15
 ATR_LEN  = 14
@@ -62,7 +70,7 @@ MIN_GAP  = 0.4
 MAX_GAP  = 3.0           # tope de hueco para dimensionar SL/TP (en x ATR). NO salta el trade:
                          # entra igual por limite en el borde real, pero si el hueco es outlier
                          # (>3xATR) topea el hueco efectivo para acotar el riesgo (ej. hueco $54
-                         # -> perdida $82 ~7% cuenta). Preserva entrada validada y razon 1.5/1.0.
+                         # -> perdida $82 ~7% cuenta). Preserva entrada validada y la razon SL/TP vigente.
 EMA_TREND = 50           # continuacion con la tendencia (EMA50, validado en 2.4 anos)
 
 
@@ -154,7 +162,7 @@ def find_pending_fvg_ohlc(O, H, L, C):
             continue
         # Hueco EFECTIVO para dimensionar SL/TP: se entra igual por limite en el borde real,
         # pero si el hueco es outlier gigante (>MAX_GAP x ATR) se topea para acotar el riesgo.
-        # Preserva la entrada validada y la razon SL 1.5x / TP 1.0x, solo limita el caso extremo.
+        # Preserva la entrada validada y la razon SL_MULT / TP_R, solo limita el caso extremo.
         geff = min(g, MAX_GAP * a) if a > 0 else g
         # NO debe haberse rellenado desde que se formo (borde aun sin tocar)
         filled = False
